@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hoa Viên — Thế giới hoa của bạn</title>
+  <meta name="description" content="Hoa Viên là khu vườn của những loài hoa: mỗi bông hoa là mỗi câu chuyện, mỗi sắc màu là một ký ức. Khám phá, sưu tầm và lưu giữ những mẫu vật hoa trong khu vườn trực tiếp của chúng tôi.">
+  <meta name="theme-color" content="#f8f4e8">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230a3424'/%3E%3Cpath d='M16 25V13M16 17c0-4.6 3-8.4 7.6-9.4.8 5.2-2.4 9.2-7.6 9.4ZM16 21.4c0-3.2-2-5.8-5.2-6.5-.5 3.6 1.7 6.4 5.2 6.5Z' stroke='%23f3d98f' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Be+Vietnam+Pro:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="garden-bg" aria-hidden="true">
+    <canvas class="garden-shader" id="gardenShader"></canvas>
+    <div class="garden-bg__veil"></div>
+    <div class="garden-bg__glow garden-bg__glow--one"></div>
+    <div class="garden-bg__glow garden-bg__glow--two"></div>
+    <div class="garden-bg__grain"></div>
+    <canvas class="petal-canvas" id="petalCanvas"></canvas>
+  </div>
+  <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+  <div class="petal-burst" id="petalBurst" aria-hidden="true"></div>
+
+  <a class="skip-link" href="#bo-suu-tap">Bỏ qua tới khu vườn</a>
+  <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+
+  <header class="site-header" id="siteHeader">
+    <div class="nav-inner">
+      <a class="brand" href="#top" aria-label="Hoa Viên — về đầu trang">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M16 28V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M16 17c0-5.2 3.4-9.4 8.5-10.5.9 5.8-2.7 10.3-8.5 10.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M16 22.5c0-3.6-2.3-6.5-5.8-7.3-.6 4 1.9 7.1 5.8 7.3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="16" cy="5.5" r="1.7" stroke="currentColor" stroke-width="1.2"/>
+          </svg>
+        </span>
+        <span class="brand-word">Hoa Viên Của Các Mỹ Nhụy</span>
+      </a>
+
+      <nav class="nav-links" aria-label="Điều hướng chính">
+        <a href="#bo-suu-tap">Khu vườn</a>
+        <a href="#sac-hoa">Sắc hoa</a>
+        <a href="#cau-chuyen">Câu chuyện</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn--ghost btn--small nav-random" id="randomNav" type="button">
+          <span class="btn-spark" aria-hidden="true">✦</span>
+          Hái hoa ngẫu nhiên
+        </button>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở menu" aria-expanded="false" aria-controls="menuDialog">
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-rays" aria-hidden="true"></div>
+      <div class="hero-sparkles" aria-hidden="true">
+        <i class="spark spark--a">✦</i>
+        <i class="spark spark--b">✧</i>
+        <i class="spark spark--c">✦</i>
+        <i class="spark spark--d">✧</i>
+      </div>
+
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <p class="garden-pill hero-pill">
+            <span class="pulse-dot" aria-hidden="true"></span>
+            Khu vườn đang nở
+            <span class="garden-pill__divider" aria-hidden="true"></span>
+            Bốn mùa hoa rơi
+          </p>
+          <h1 class="hero-title" id="heroTitle">Một khu vườn<br>của những<br><em>loài hoa.</em></h1>
+          <p class="hero-lede">Bước vào khu vườn số, nơi mỗi loài hoa là một thẻ mẫu vật với hình ảnh, sắc độ và cái tên riêng. Chạm vào một bông để mở nó ra và ngắm thật gần.</p>
+          <div class="hero-actions">
+            <a class="btn btn--solid btn--glow" href="#bo-suu-tap">
+              Khám phá khu vườn
+              <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h11M9.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <button class="btn btn--text" id="randomHero" type="button">
+              <span class="btn-spark" aria-hidden="true">✿</span>
+              Hái một bông ngẫu nhiên
+            </button>
+          </div>
+          <dl class="hero-stats">
+            <div class="hero-stat">
+              <dt>Mẫu vật</dt>
+              <dd id="statTotal">—</dd>
+            </div>
+            <div class="hero-stat">
+              <dt>Sắc hoa</dt>
+              <dd id="statQuality">—</dd>
+            </div>
+            <div class="hero-stat hero-stat--live">
+              <dt>Khu vườn</dt>
+              <dd class="hero-stats__live"><span class="live-dot" aria-hidden="true"></span>Trực tiếp</dd>
+            </div>
+          </dl>
+        </div>
+
+        <figure class="hero-art">
+          <div class="hero-art__inner" id="heroInner">
+            <span class="hero-art__halo" id="heroHalo" aria-hidden="true"></span>
+            <span class="hero-art__orbit" aria-hidden="true"><i></i></span>
+            <span class="hero-art__frame" aria-hidden="true"></span>
+            <div class="hero-art__media" id="heroMedia">
+              <img id="heroImage" alt="" fetchpriority="high" decoding="async" hidden>
+              <img id="heroImageNext" alt="" fetchpriority="high" decoding="async" hidden>
+              <div class="hero-art__placeholder" id="heroPlaceholder" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                  <path d="M32 54V28" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M32 38c0-9 6-16 15-18 1.5 9.5-5 17-15 18Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M32 46c0-6-4-11-10-12.5-1 6.5 3.5 12 10 12.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+                <span>Đang mở khu vườn…</span>
+              </div>
+              <span class="hero-art__glass" aria-hidden="true"></span>
+            </div>
+            <figcaption class="hero-caption">
+              <span class="hero-caption__label"><span class="hero-caption__flower" aria-hidden="true">✿</span> Thẻ mẫu vật</span>
+              <strong id="heroName">Đang tải…</strong>
+              <span class="hero-caption__meta"><span class="dot dot--tim" id="heroDot" aria-hidden="true"></span><span id="heroQuality">—</span></span>
+            </figcaption>
+            <div class="hero-chips" aria-hidden="true">
+              <span class="hero-chip hero-chip--red"><span class="dot dot--do"></span>Đỏ <b data-count="đỏ">—</b></span>
+              <span class="hero-chip hero-chip--orange"><span class="dot dot--cam"></span>Cam <b data-count="cam">—</b></span>
+              <span class="hero-chip hero-chip--plum"><span class="dot dot--tim"></span>Tím <b data-count="tím">—</b></span>
+            </div>
+            <span class="hero-art__side" aria-hidden="true">Hoa Viên · Khu vườn của những người mơ mộng </span>
+          </div>
+        </figure>
+      </div>
+
+      <a class="hero-scroll" href="#sac-hoa" aria-label="Cuộn xuống phần sắc hoa">
+        <span>Cuộn để bước vào</span>
+        <i aria-hidden="true"></i>
+      </a>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee__track">
+        <span>Khám phá</span><i>✿</i><span>Sưu tầm</span><i>✦</i><span>Ngắm nhìn</span><i>✿</i><span>Lưu giữ</span><i>✦</i>
+        <span>Khám phá</span><i>✿</i><span>Sưu tầm</span><i>✦</i><span>Ngắm nhìn</span><i>✿</i><span>Lưu giữ</span><i>✦</i>
+        <span>Khám phá</span><i>✿</i><span>Sưu tầm</span><i>✦</i><span>Ngắm nhìn</span><i>✿</i><span>Lưu giữ</span><i>✦</i>
+      </div>
+    </div>
+
+    <section class="section quality" id="sac-hoa" aria-labelledby="qualityTitle">
+      <div class="quality-vine quality-vine--left" aria-hidden="true"></div>
+      <div class="container quality-grid">
+        <div class="quality-head" data-reveal>
+          <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span>Ba sắc hoa</p>
+          <h2 class="section-title" id="qualityTitle">Chọn một lối<br><em>bước vào vườn.</em></h2>
+          <p class="section-lede">Mỗi mẫu vật mang một trong ba sắc độ. Chạm vào một sắc để lọc nhanh khu vườn bên dưới.</p>
+          <div class="quality-hint">
+            <span class="quality-hint__icon" aria-hidden="true">❋</span>
+            <span>Mẹo nhỏ: rê chuột lên thẻ hoa để nhìn kỹ hơn.</span>
+          </div>
+        </div>
+
+        <div class="quality-list" id="qualityList">
+          <button class="quality-row" type="button" data-quality="đỏ" data-reveal style="--delay: 40ms">
+            <span class="quality-row__glow" aria-hidden="true"></span>
+            <span class="quality-row__top">
+              <span class="quality-row__dot dot dot--do" aria-hidden="true"></span>
+              <span class="quality-row__tag">Sắc son</span>
+              <svg class="quality-row__arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h11M9.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="quality-row__name">Đỏ</span>
+            <span class="quality-row__desc">Là những bông hoa tuyệt đẹp mang màu sắc của sự quyến rủ</span>
+            <span class="quality-row__count" data-count="đỏ">—</span>
+          </button>
+          <button class="quality-row" type="button" data-quality="cam" data-reveal style="--delay: 110ms">
+            <span class="quality-row__glow" aria-hidden="true"></span>
+            <span class="quality-row__top">
+              <span class="quality-row__dot dot dot--cam" aria-hidden="true"></span>
+              <span class="quality-row__tag">Nắng mai</span>
+              <svg class="quality-row__arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h11M9.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="quality-row__name">Cam</span>
+            <span class="quality-row__desc">Những loài hoa mang màu sắc của sự ấm áp.</span>
+            <span class="quality-row__count" data-count="cam">—</span>
+          </button>
+          <button class="quality-row" type="button" data-quality="tím" data-reveal style="--delay: 180ms">
+            <span class="quality-row__glow" aria-hidden="true"></span>
+            <span class="quality-row__top">
+              <span class="quality-row__dot dot dot--tim" aria-hidden="true"></span>
+              <span class="quality-row__tag">Chiều tím</span>
+              <svg class="quality-row__arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 8h11M9.5 4l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="quality-row__name">Tím</span>
+            <span class="quality-row__desc">Loài hoa đại diện cho sự chuy thủy</span>
+            <span class="quality-row__count" data-count="tím">—</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section collection" id="bo-suu-tap" aria-labelledby="collectionTitle">
+      <div class="collection-vine collection-vine--right" aria-hidden="true"></div>
+      <div class="container">
+        <div class="collection-head" data-reveal>
+          <div>
+            <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span>Bộ sưu tập</p>
+            <h2 class="section-title" id="collectionTitle">Khu vườn <em>của những đóa hoa</em></h2>
+          </div>
+          <p class="collection-note" id="collectionNote">Đang kết nối dữ liệu…</p>
+        </div>
+
+        <div class="toolbar" data-reveal style="--delay: 60ms">
+          <div class="search-field">
+            <svg class="search-field__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+              <path d="m13 13 4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+            </svg>
+            <label class="sr-only" for="searchInput">Tìm theo tên hoa</label>
+            <input id="searchInput" type="search" placeholder="Tìm một bông hoa, ví dụ: sen, hồng…" autocomplete="off" spellcheck="false">
+            <button class="search-clear" id="searchClear" type="button" aria-label="Xoá tìm kiếm" hidden>×</button>
+          </div>
+
+          <div class="filter-group" role="group" aria-label="Lọc theo sắc độ">
+            <button class="chip is-active" type="button" data-quality="all" aria-pressed="true">Tất cả <span data-count="all">—</span></button>
+            <button class="chip" type="button" data-quality="đỏ" aria-pressed="false">Đỏ <span data-count="đỏ">—</span></button>
+            <button class="chip" type="button" data-quality="cam" aria-pressed="false">Cam <span data-count="cam">—</span></button>
+            <button class="chip" type="button" data-quality="tím" aria-pressed="false">Tím <span data-count="tím">—</span></button>
+          </div>
+
+          <div class="sort-field">
+            <label for="sortSelect">Sắp xếp</label>
+            <select id="sortSelect">
+              <option value="name-asc">Tên A–Z</option>
+              <option value="name-desc">Tên Z–A</option>
+              <option value="quality">Theo sắc độ</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="results-line">
+          <p id="resultsText" aria-live="polite">Đang tải khu vườn…</p>
+          <button class="btn btn--text btn--small" id="randomFiltered" type="button">
+            <span class="btn-spark" aria-hidden="true">✦</span>
+            Chọn ngẫu nhiên
+          </button>
+        </div>
+
+        <div class="gallery-grid" id="gallerySkeleton" aria-hidden="true">
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-media"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-line--short"></div></div>
+        </div>
+
+        <div class="gallery-grid" id="flowerGrid"></div>
+
+        <div class="empty-state" id="emptyState" hidden>
+          <svg viewBox="0 0 64 64" fill="none" aria-hidden="true">
+            <circle cx="32" cy="32" r="8" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M32 24c-6-3-10-8-9-14 6 0 10 5 9 14Zm8 8c3-6 8-10 14-9 0 6-5 10-14 9Zm-8 8c6 3 10 8 9 14-6 0-10-5-9-14Zm-8-8c-3 6-8 10-14 9 0-6 5-10 14-9Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          </svg>
+          <h3>Không tìm thấy mẫu vật</h3>
+          <p>Thử một từ khoá khác hoặc xoá bộ lọc đang chọn.</p>
+          <button class="btn btn--outline btn--small" id="emptyReset" type="button">Đặt lại bộ lọc</button>
+        </div>
+
+        <nav class="pagination" id="pagination" aria-label="Phân trang bộ sưu tập"></nav>
+
+        <div class="status" id="statusArea" role="alert" hidden aria-busy="false">
+          <p id="statusMessage"></p>
+          <button class="btn btn--solid btn--small" id="retryButton" type="button">Thử lại</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="statement" id="cau-chuyen" aria-labelledby="statementTitle">
+      <div class="statement-aurora" aria-hidden="true"></div>
+      <div class="statement-vine statement-vine--left" aria-hidden="true"></div>
+      <div class="statement-vine statement-vine--right" aria-hidden="true"></div>
+      <div class="container statement-inner">
+        <div class="statement-top">
+          <p class="eyebrow eyebrow--light" id="statementTitle">Câu chuyện và lời mở đầu của những đóa hoa</p>
+          <p class="statement-note">Một khu vườn không bao giờ ngủ</p>
+        </div>
+        <p class="statement-text" id="statementText">Mỗi loài hoa là một <em>ký ức</em> được lưu lại bằng một bức ảnh, một sắc màu và một cái tên. Chúng tôi sắp xếp chúng thành một <em>bản đồ nhỏ</em> — để bạn tìm lại điều mình đã <em>bỏ quên</em>.</p>
+        <div class="statement-foot">
+          <span>Hoa Viên</span>
+          <span>Khu vườn mơ mộng· 2026</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a class="brand" href="#top" aria-label="Hoa Viên — về đầu trang">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="none">
+                <path d="M16 28V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M16 17c0-5.2 3.4-9.4 8.5-10.5.9 5.8-2.7 10.3-8.5 10.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M16 22.5c0-3.6-2.3-6.5-5.8-7.3-.6 4 1.9 7.1 5.8 7.3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="16" cy="5.5" r="1.7" stroke="currentColor" stroke-width="1.2"/>
+              </svg>
+            </span>
+            <span class="brand-word">Hoa Viên</span>
+          </a>
+          <p>Một khu vườn của những loài hoa được lưu giữ, cập nhật trực tiếp từ bộ sưu tập.</p>
+        </div>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h3>Khám phá</h3>
+            <a href="#bo-suu-tap">Khu vườn</a>
+            <a href="#sac-hoa">Sắc hoa</a>
+            <a href="#cau-chuyen">Câu chuyện</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p class="footer-legal">
+          © 2026 Hoa Viên. Bộ sưu tập phi thương mại.
+          <span class="footer-count" id="footerCount">-</span>
+        </p>
+        <a class="back-top" href="#top">Về đầu trang <span aria-hidden="true">↑</span></a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="mobile-bar" id="mobileBar">
+    <a class="mobile-bar__link" href="#bo-suu-tap">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="2.5" y="3.5" width="6" height="6" stroke="currentColor" stroke-width="1.3"/><rect x="11.5" y="3.5" width="6" height="6" stroke="currentColor" stroke-width="1.3"/><rect x="2.5" y="12.5" width="6" height="6" stroke="currentColor" stroke-width="1.3"/><rect x="11.5" y="12.5" width="6" height="6" stroke="currentColor" stroke-width="1.3"/></svg>
+      Khu vườn
+    </a>
+    <button class="mobile-bar__random" id="randomMobile" type="button">Hái hoa ngẫu nhiên</button>
+  </div>
+
+  <dialog class="menu-dialog" id="menuDialog" aria-labelledby="menuTitle">
+    <div class="menu-panel">
+      <div class="menu-head">
+        <span class="menu-title" id="menuTitle">Hoa Viên</span>
+        <button class="icon-btn" id="menuClose" type="button" aria-label="Đóng menu">×</button>
+      </div>
+      <nav class="menu-nav" aria-label="Menu di động">
+        <a href="#bo-suu-tap">Khu vườn <span id="menuCount">—</span></a>
+        <a href="#sac-hoa">Sắc hoa <span>03</span></a>
+        <a href="#cau-chuyen">Câu chuyện</a>
+      </nav>
+      <div class="menu-foot">
+        <p>Một khu vườn nhỏ của những loài hoa.</p>
+        <button class="btn btn--solid" id="randomMenu" type="button">Hái một bông ngẫu nhiên</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="lightbox" id="flowerDialog" aria-labelledby="dialogTitle">
+    <div class="lightbox-grid">
+      <div class="lightbox-media" id="lightboxMedia">
+        <span class="lightbox-glow" aria-hidden="true"></span>
+        <span class="lightbox-shimmer" id="lightboxShimmer" aria-hidden="true"></span>
+        <img id="lightboxImage" alt="" hidden>
+        <span class="lightbox-fallback" id="lightboxFallback" hidden>Chưa có ảnh cho mẫu vật này</span>
+        <span class="lightbox-caption" aria-hidden="true">✿ Những đóa hoa trong vườn</span>
+      </div>
+      <div class="lightbox-info">
+        <button class="icon-btn lightbox-close" id="lightboxClose" type="button" aria-label="Đóng chi tiết">×</button>
+        <p class="eyebrow" id="dialogKicker">Những đóa hoa</p>
+        <h2 class="lightbox-title" id="dialogTitle">—</h2>
+        <p class="lightbox-badge" id="dialogQuality">—</p>
+        <p class="lightbox-note" id="dialogNote" hidden></p>
+        <dl class="lightbox-meta">
+          <div>
+            <dt>Sắc độ</dt>
+            <dd id="dialogQualityText">—</dd>
+          </div>
+          <div>
+            <dt>Ảnh gốc</dt>
+            <dd id="dialogFile">—</dd>
+          </div>
+        </dl>
+        <div class="lightbox-actions">
+          <button class="btn btn--outline btn--small" id="dialogPrev" type="button">← Trước</button>
+          <button class="btn btn--outline btn--small" id="dialogNext" type="button">Sau →</button>
+        </div>
+        <p class="lightbox-position" id="dialogPosition">—</p>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="main.js"></script>
+</body>
+</html>
