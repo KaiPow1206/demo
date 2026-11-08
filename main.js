@@ -1,8 +1,3 @@
-/* =========================================================
-   Hoa Viên — main.js
-   Dữ liệu, bộ lọc, lightbox và các lớp hiệu ứng khu vườn.
-   ========================================================= */
-
 const API_URL = "https://key-demo.nguyennhoanhthai.workers.dev";
 
 const CACHE_STORAGE_KEY = "flower_library_cache_v2";
