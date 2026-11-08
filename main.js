@@ -18,6 +18,7 @@ const CARD_TRANSFORM = "c_fill,w_640,h_400,g_south,q_auto,f_auto";
 const HERO_TRANSFORM = "c_fill,w_1200,h_800,g_south,q_auto,f_auto";
 const LIGHTBOX_TRANSFORM = "q_auto,f_auto";
 const MAX_DECODED_IMAGE_CACHE_ENTRIES = 1000;
+const GUARD_BLOCKED_MESSAGE = "__curiosity_guard_blocked__";
 
 const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const mobileQuery = window.matchMedia("(max-width: 640px)");
@@ -50,6 +51,7 @@ let scrollFrame = 0;
 let dialogList = [];
 let dialogIndex = 0;
 let sequence = 0;
+let guardReleaseHooked = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -1084,6 +1086,9 @@ function writeCachedFlowers(flowers) {
 async function fetchFlowersFromApi() {
   const controller = new AbortController();
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const abortOnGuard = () => controller.abort();
+
+  window.addEventListener("curiosityguard:block", abortOnGuard, { once: true });
 
   let response;
 
@@ -1093,12 +1098,16 @@ async function fetchFlowersFromApi() {
       cache: "no-store",
     });
   } catch (error) {
+    if (window.__curiosityGuardActive) {
+      throw new Error(GUARD_BLOCKED_MESSAGE);
+    }
     if (error && error.name === "AbortError") {
       throw new Error("Máy chủ phản hồi quá lâu. Kiểm tra kết nối rồi thử lại.");
     }
     throw new Error("Không thể kết nối tới máy chủ. Kiểm tra mạng rồi thử lại.");
   } finally {
     window.clearTimeout(timeoutId);
+    window.removeEventListener("curiosityguard:block", abortOnGuard);
   }
 
   if (!response.ok) {
@@ -1167,6 +1176,12 @@ function showError(message) {
 }
 
 async function loadData() {
+  // DevTools đang mở: không gọi API, chờ đóng DevTools rồi mới tải.
+  if (window.__curiosityGuardActive) {
+    waitForGuardRelease();
+    return;
+  }
+
   const cached = readCachedFlowers();
 
   if (cached) {
@@ -1185,11 +1200,34 @@ async function loadData() {
     nextRefreshAt = Date.now() + REFRESH_INTERVAL_MS;
   } catch (error) {
     nextRefreshAt = Date.now() + MIN_REFRESH_GAP_MS;
+    if (error && error.message === GUARD_BLOCKED_MESSAGE) {
+      waitForGuardRelease();
+      return;
+    }
     showError(error && error.message ? error.message : "Đã xảy ra lỗi khi tải dữ liệu.");
   }
 }
 
+function waitForGuardRelease() {
+  if (guardReleaseHooked) return;
+
+  guardReleaseHooked = true;
+  window.addEventListener(
+    "curiosityguard:release",
+    () => {
+      guardReleaseHooked = false;
+      loadData();
+    },
+    { once: true }
+  );
+}
+
 function refreshFlowersInBackground(force = false) {
+  if (window.__curiosityGuardActive) {
+    waitForGuardRelease();
+    return Promise.resolve();
+  }
+
   if (refreshInFlight) return refreshInFlight;
   if (navigator.onLine === false) return Promise.resolve();
 
@@ -1207,8 +1245,11 @@ function refreshFlowersInBackground(force = false) {
 
       if (changed) applyFlowers(freshFlowers, { preservePage: true });
     })
-    .catch(() => {
+    .catch((error) => {
       nextRefreshAt = Date.now() + MIN_REFRESH_GAP_MS;
+      if (error && error.message === GUARD_BLOCKED_MESSAGE) {
+        waitForGuardRelease();
+      }
     })
     .finally(() => {
       refreshInFlight = null;
