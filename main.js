@@ -1,4 +1,4 @@
-const API_URL = "https://key-demo.nguyennhoanhthai.workers.dev";
+const API_URL = "https://key-demo.nguyennhoanhthai.workers.dev/";
 
 const CACHE_STORAGE_KEY = "flower_library_cache_v2";
 const CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -9,9 +9,11 @@ const SEARCH_DEBOUNCE_MS = 180;
 const HERO_ROTATE_MS = 5000;
 const DESKTOP_PAGE_SIZE = 12;
 const MOBILE_PAGE_SIZE = 6;
-const CARD_TRANSFORM = "c_fill,w_640,h_400,g_south,q_auto,f_auto";
-const HERO_TRANSFORM = "c_fill,w_1200,h_800,g_south,q_auto,f_auto";
-const LIGHTBOX_TRANSFORM = "q_auto,f_auto";
+// Nguồn ảnh đã đủ đẹp nên chỉ cắt nhẹ theo tỉ lệ khung, không phóng to quá mức.
+// g_auto giúp Cloudinary chọn tiêu điểm hợp lý thay vì luôn cắt sát đáy ảnh.
+const CARD_TRANSFORM = "c_fill,w_640,h_640,g_center,q_auto,f_auto";
+const HERO_TRANSFORM = "c_fill,w_1200,h_1500,g_center,q_auto,f_auto";
+const LIGHTBOX_TRANSFORM = "c_scale,w_1000,q_auto:good,f_auto";
 const MAX_DECODED_IMAGE_CACHE_ENTRIES = 1000;
 const GUARD_BLOCKED_MESSAGE = "__curiosity_guard_blocked__";
 
@@ -45,6 +47,7 @@ let nextRefreshAt = 0;
 let scrollFrame = 0;
 let dialogList = [];
 let dialogIndex = 0;
+let dialogReturnFocus = null;
 let sequence = 0;
 let guardReleaseHooked = false;
 
@@ -95,6 +98,7 @@ const menuNav = menuDialog.querySelector(".menu-nav");
 
 const flowerDialog = $("flowerDialog");
 const lightboxImage = $("lightboxImage");
+const lightboxBackdrop = $("lightboxBackdrop");
 const lightboxShimmer = $("lightboxShimmer");
 const lightboxFallback = $("lightboxFallback");
 const lightboxClose = $("lightboxClose");
@@ -181,7 +185,7 @@ function imageFileName(url) {
   if (!url) return "";
 
   try {
-    const path = new URL(url).pathname;
+    const path = new URL(url, window.location.href).pathname;
     const lastSegment = path.split("/").filter(Boolean).pop() || "";
     return decodeURIComponent(lastSegment)
       .replace(/\.[a-z0-9]{2,5}$/i, "")
@@ -441,13 +445,14 @@ const heroStage = {
 };
 
 function pickDefaultHero() {
-  return (
-    state.flowers.find(
-      (flower) => flower.image && normalizeForSearch(flower.name) === "ca chep vuot song"
-    ) ||
-    state.flowers.find((flower) => flower.image) ||
-    state.flowers[0]
-  );
+  const preferredNames = ["chep vang vuot song", "ca chep vuot song"];
+  const preferred = state.flowers.find((flower) => {
+    if (!flower.image) return false;
+    const key = normalizeForSearch(flower.name);
+    return preferredNames.includes(key);
+  });
+
+  return preferred || state.flowers.find((flower) => flower.image) || state.flowers[0];
 }
 
 function setHeroCaption(flower) {
@@ -649,17 +654,26 @@ function createFlowerCard(flower, index) {
 
   if (flower.image) {
     const image = document.createElement("img");
+    const source = cloudinaryVariant(flower.image, CARD_TRANSFORM) || flower.image;
+    let triedOriginal = source === flower.image;
+
     image.alt = flower.name;
     image.loading = "lazy";
     image.decoding = "async";
-    image.src = cloudinaryVariant(flower.image, CARD_TRANSFORM);
-    image.addEventListener(
-      "error",
-      () => {
-        card.classList.add("has-no-image");
-      },
-      { once: true }
-    );
+    image.src = source;
+
+    const handleImageError = () => {
+      if (!triedOriginal) {
+        triedOriginal = true;
+        image.src = flower.image;
+        return;
+      }
+
+      image.removeEventListener("error", handleImageError);
+      card.classList.add("has-no-image");
+    };
+
+    image.addEventListener("error", handleImageError);
     media.appendChild(image);
   } else {
     card.classList.add("has-no-image");
@@ -941,6 +955,12 @@ function renderDialog() {
   lightboxImage.style.opacity = "0";
   lightboxImage.removeAttribute("src");
   lightboxImage.alt = flower.name;
+
+  if (lightboxBackdrop) {
+    lightboxBackdrop.hidden = true;
+    lightboxBackdrop.removeAttribute("src");
+  }
+
   lightboxFallback.hidden = true;
   lightboxShimmer.hidden = false;
 
@@ -954,6 +974,11 @@ function renderDialog() {
     lightboxImage.hidden = false;
     lightboxImage.loading = "eager";
 
+    if (lightboxBackdrop) {
+      lightboxBackdrop.hidden = false;
+      lightboxBackdrop.src = source;
+    }
+
     lightboxImage.onload = () => {
       lightboxShimmer.hidden = true;
       lightboxFallback.hidden = true;
@@ -963,6 +988,7 @@ function renderDialog() {
       if (!triedOriginal) {
         triedOriginal = true;
         lightboxImage.src = flower.image;
+        if (lightboxBackdrop) lightboxBackdrop.src = flower.image;
         return;
       }
       lightboxShimmer.hidden = true;
@@ -996,6 +1022,8 @@ function openFlowerDialog(flower, list) {
   renderDialog();
 
   if (!flowerDialog.open) {
+    dialogReturnFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     flowerDialog.showModal();
     syncBodyLock();
     lightboxClose.focus();
@@ -1692,6 +1720,10 @@ function handleCursorMove(event) {
 
 function hideCursorGlow() {
   if (!cursorGlow) return;
+  if (glowFrame) {
+    cancelAnimationFrame(glowFrame);
+    glowFrame = 0;
+  }
   cursorGlow.classList.remove("is-on");
 }
 
@@ -2053,6 +2085,17 @@ flowerDialog.addEventListener("close", () => {
   lightboxImage.hidden = true;
   lightboxImage.style.opacity = "0";
   lightboxImage.removeAttribute("src");
+
+  if (lightboxBackdrop) {
+    lightboxBackdrop.hidden = true;
+    lightboxBackdrop.removeAttribute("src");
+  }
+
+  if (dialogReturnFocus && document.contains(dialogReturnFocus)) {
+    dialogReturnFocus.focus({ preventScroll: true });
+  }
+  dialogReturnFocus = null;
+
   scheduleHeroRotation();
 });
 
